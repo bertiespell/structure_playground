@@ -1,35 +1,21 @@
 import * as THREE from "three";
+import { loadModel } from "./load-model";
+import { Mover } from "./mover";
+import { constructFloor } from "./construct-floor";
 
 export class App {
 	private scene: THREE.Scene;
 
 	constructor() {
 		this.initialise();
-		this.loadModel();
+		this.loadScene();
 	}
 
-	public loadModel() {
-		const loader = new THREE.OBJLoader();
-		loader.load(
-			// resource URL
-			"./model.obj",
-
-			// onLoad callback
-			// Here the loaded data is assumed to be an object
-			(obj) => {
-				this.scene.add(obj);
-			},
-
-			// onProgress callback
-			(xhr) => {
-				console.log((xhr.loaded / xhr.total) * 100 + "% loaded");
-			},
-
-			// onError callback
-			(err) => {
-				console.error("An error happened", err);
-			},
-		);
+	private async loadScene() {
+		const floor = constructFloor();
+		this.scene.add(floor);
+		// const model = await loadModel('./model.obj', './model.mtl');
+		// this.scene.add(model);
 	}
 
 	private initialise() {
@@ -40,28 +26,17 @@ export class App {
 		renderer.setSize(window.innerWidth, window.innerHeight);
 		document.body.appendChild(renderer.domElement);
 
-		const geometry = new THREE.BoxGeometry(1, 1, 1);
-		const material = new THREE.MeshBasicMaterial({ color: 0x00ff00 });
-		const cube = new THREE.Mesh(geometry, material);
-		this.scene.add(cube);
+		let ambientLight = new THREE.AmbientLight(0x404040); // soft white light
+		this.scene.add(ambientLight);
 
-		camera.position.z = 5;
-
-		var light = new THREE.PointLight( 0xff0000, 10, 100 );
-		light.position.set( 50, 50, 50 );
-		this.scene.add( light );
-
-		var ambientLight = new THREE.AmbientLight( 0x404040 ); // soft white light
-		this.scene.add( ambientLight );
+		const mover = new Mover(camera);
+		this.scene.add(mover.controls.getObject());
 
 		const animate = () => {
 			requestAnimationFrame(animate);
-
-			cube.rotation.x += 0.01;
-			cube.rotation.y += 0.01;
+			mover.move();
 			renderer.render(this.scene, camera);
 		};
-
 		animate();
 	}
 }

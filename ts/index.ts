@@ -5,6 +5,7 @@ import * as THREE from "three";
 (window as any).THREE = THREE;
 import "three/examples/js/loaders/MTLLoader.js";
 import "three/examples/js/loaders/OBJLoader.js";
+import "three/examples/js/controls/PointerLockControls.js"
 
 import { App } from './app';
 
