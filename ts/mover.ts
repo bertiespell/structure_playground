@@ -1,10 +1,24 @@
 import * as THREE from "three";
+import { throttle } from 'underscore';
+import { playChord } from "./make-chord";
 
+export type EncounteredObjects = {
+    [uuid: string]: boolean
+}
 export class Mover {
-	public controls: any;
-	private objects: any = [];
+    private controls: any;
+	public get yawObject(): THREE.Object3D {
+        return this.controls.getObject();
+    }
+    public get directionFacing(): THREE.Vector3 {
+        return this.controls.getDirection(new THREE.Vector3(0,0,0));
+    }
 
-	private raycaster = new THREE.Raycaster(new THREE.Vector3(), new THREE.Vector3(0, -1, 0), 0, 10);
+    public get encounteredObjects() {
+        return this._encounteredObjects;
+    }
+
+    private _encounteredObjects: EncounteredObjects = {};
 	private moveForward = false;
 	private moveBackward = false;
 	private moveLeft = false;
@@ -12,13 +26,18 @@ export class Mover {
 	private canJump = false;
 	private prevTime = performance.now();
 	private velocity = new THREE.Vector3();
-	private direction = new THREE.Vector3();
+    private direction = new THREE.Vector3();
+    
+    private throttledEncounterSwap: any;
 
-	constructor(camera: THREE.PerspectiveCamera) {
+	constructor(
+        camera: THREE.PerspectiveCamera, 
+        private scene: THREE.Scene
+    ) {
 		this.controls = new (THREE as any).PointerLockControls(camera);
 		document.body.addEventListener("click", () => {
 			this.controls.lock();
-		});
+        });
 
 		const onKeyDown = (event: KeyboardEvent) => {
 			switch (event.keyCode) {
@@ -67,14 +86,40 @@ export class Mover {
 			}
 		};
 		document.addEventListener("keydown", onKeyDown, false);
-		document.addEventListener("keyup", onKeyUp, false);
+        document.addEventListener("keyup", onKeyUp, false);
+        
+        const throttledEncountedSwap = throttle((uuid: string) => {
+            if (!this._encounteredObjects.hasOwnProperty(uuid)) {
+                this._encounteredObjects[uuid] = true;
+            } else {
+                this._encounteredObjects[uuid] = !this._encounteredObjects[uuid];
+            }
+            if (this._encounteredObjects[uuid]) {
+                console.log('ThrolledEncounterSwap')
+                playChord(Math.min(Math.min(Math.random()*80, 50), 80));
+            }
+        }, 3000);
+
+        this.throttledEncounterSwap = throttledEncountedSwap;
 	}
 
 	public move() {
 		if (this.controls.isLocked === true) {
-			this.raycaster.ray.origin.copy(this.controls.getObject().position);
-			this.raycaster.ray.origin.y -= 10;
-			const intersections = this.raycaster.intersectObjects(this.objects);
+            const raycaster = new THREE.Raycaster(
+                this.yawObject.position, 
+                this.directionFacing.normalize(), 
+                0, 
+                20
+            );
+
+            const intersections = raycaster.intersectObjects(this.scene.children);
+            
+            intersections.forEach(intersection => {
+                // when we encounter a new object - we store it as colliding
+                const uuid = intersection.object.uuid;
+                this.throttledEncounterSwap(uuid);
+            });
+            
 			const onObject = intersections.length > 0;
 			const time = performance.now();
 			const delta = (time - this.prevTime) / 1000;

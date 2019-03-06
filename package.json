@@ -12,10 +12,14 @@
   "dependencies": {
     "@types/three": "^0.93.19",
     "three": "^0.98.0",
+    "tone": "^13.4.9",
+    "underscore": "^1.9.1",
     "webpack": "^4.29.6",
     "webpack-cli": "^3.2.3"
   },
   "devDependencies": {
+    "@types/tone": "https://github.com/Tonejs/TypeScript.git",
+    "@types/underscore": "^1.8.12",
     "copy-webpack-plugin": "^5.0.0",
     "html-webpack-plugin": "^3.2.0",
     "http-server": "^0.11.1",

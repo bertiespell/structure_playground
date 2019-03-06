@@ -1,21 +1,28 @@
 import * as THREE from "three";
+import { constructFloor } from "./construct-floor";
 import { loadModel } from "./load-model";
 import { Mover } from "./mover";
-import { constructFloor } from "./construct-floor";
+import { Sampler } from "./sampler";
+import { addPlanets } from "./add-planets";
+import { addOctahedrons } from "./add-octahedron";
 
 export class App {
 	private scene: THREE.Scene;
+	private mover: Mover;
+	private sampler: Sampler;
 
 	constructor() {
 		this.initialise();
 		this.loadScene();
+		this.sampler = new Sampler();
 	}
 
 	private async loadScene() {
 		const floor = constructFloor();
 		this.scene.add(floor);
-		// const model = await loadModel('./model.obj', './model.mtl');
-		// this.scene.add(model);
+		const meshes = await addPlanets(7);
+		const artifacts = addOctahedrons();
+		this.scene.add(...meshes, ...artifacts);
 	}
 
 	private initialise() {
@@ -26,15 +33,15 @@ export class App {
 		renderer.setSize(window.innerWidth, window.innerHeight);
 		document.body.appendChild(renderer.domElement);
 
-		let ambientLight = new THREE.AmbientLight(0x404040); // soft white light
+		const ambientLight = new THREE.AmbientLight(0x404040); // soft white light
 		this.scene.add(ambientLight);
 
-		const mover = new Mover(camera);
-		this.scene.add(mover.controls.getObject());
+		this.mover = new Mover(camera, this.scene);
+		this.scene.add(this.mover.yawObject);
 
 		const animate = () => {
 			requestAnimationFrame(animate);
-			mover.move();
+			this.mover.move();
 			renderer.render(this.scene, camera);
 		};
 		animate();
